@@ -91,6 +91,10 @@ main(int argc, char *argv[])
 	    XFlush(dpy);
 	}
 	stringx+=5; stringy+=0;
+	if (stringx > 400) {
+	    stringx = 0;
+	    stringy+= 12;
+	}
     }
 
     XDestroyWindow(dpy, win);
