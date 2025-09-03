@@ -1,15 +1,19 @@
 #include <X11/Xatom.h>
 #include <X11/Xlib.h>
+#include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/keysym.h>
 #include <X11/XKBlib.h>
-#include <X11/Xft/Xft.h> /* use this for installing fonts, need to fix includes */
+/*#include <X11/Xft/Xft.h> use this for installing fonts, need to fix includes */
 #include <stdlib.h>
+#include <stdio.h>
 #include <unistd.h>
+#include <locale.h>
 #include <err.h>
 #include <string.h>
 
-enum WindowMetrics {
+enum WindowMetrics 
+{
     INIT_X = 10,
     INIT_Y = 10,
     INIT_W = 100,
@@ -22,8 +26,9 @@ enum WindowMetrics {
 int
 main(int argc, char *argv[])
 {
+    setlocale(LC_CTYPE, "sv_SE");
     XEvent ev; /* used in main loop */
-    const char* buffer = "Hello and welcome 2 my awsum program!!!";
+    char buffer[4] = "\0\0\0";
 
     Display *dpy = XOpenDisplay(NULL);
     if (dpy == NULL) err(EXIT_FAILURE, "XOpenDisplay: "); /* defaults to $DISPLAY */
@@ -52,31 +57,40 @@ main(int argc, char *argv[])
 
     GC gc = XCreateGC(dpy, win, GCFunction|GCForeground|GCBackground, &gcvals);
 
-    XStoreName(dpy, win, "pterm");
+    XStoreName(dpy, win, "psyterm");
 
 
     /* logic section */
-    XSelectInput(dpy, win, ExposureMask|KeyPressMask); /* listen for these events */
+    XSelectInput(dpy, win, ExposureMask|KeyPressMask|KeyReleaseMask|ButtonPressMask|ButtonReleaseMask); /* listen for these events */
     XMapWindow(dpy, win);
 
     int stringx = 10;
     int stringy = 10;
 
-    while (1) {
+    while (1) 
+    {
 
-	XNextEvent(dpy, &ev);
+	XNextEvent(dpy, &ev); /* wait */
+	/* TODO: should add switch statement here
+	 * should handle window resize events (so lines can wrap properly)
+	 */
 	if (ev.type == Expose) {
 	    XFillRectangle(dpy, win, gc,
-		    100, 10, 100, 10);
+		    11, 10, 100, 10);
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, buffer, strlen(buffer));
 	    XFlush(dpy);
 	} else if (ev.type == KeyPress) {
+	    unsigned int keycode = (unsigned int)ev.xkey.keycode;
+	    KeySym keysym;
+	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL);
+	    /* keycode must be converted to keysym */
+	    fprintf(stderr, "%lu\n", keysym);
 	    XDrawString(dpy, win, gc,
-		    stringx, stringy, "Press!", 6);
+		    stringx, stringy, buffer, strlen(buffer));
 	    XFlush(dpy);
 	}
-	stringx+=0; stringy+=10;
+	stringx+=5; stringy+=0;
     }
 
     XDestroyWindow(dpy, win);

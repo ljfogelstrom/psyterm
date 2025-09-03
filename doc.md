@@ -35,3 +35,20 @@ XFillRectangle() and etc.
 Text drawing functions.
 
 Note: Using same drawable and GC for consecutive calls will reduce server load
+
+## Ch. 10: Event Handling
+Events of interest:
+    - KeyPress, KeyRelease
+    - ButtonPress, ButtonRelease, MotionNotify
+    - KeymapNotify (issued when a key is remapped, presumably)
+    - ClientMessage?
+
+### 10.5: Keyboard and Pointer Events
+The server reports KeyPress and KeyRelease events for clients which have them masked.
+Of interest are particularly the XKeyEvents XKeyPressed/ReleaseEvents.
+
+## Ch. 11: Event Handling (cont.)
+
+### 12.7: Key Encodings
+
+## Ch. 13: Locales & Text Functions
