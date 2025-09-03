@@ -47,6 +47,9 @@ Events of interest:
 The server reports KeyPress and KeyRelease events for clients which have them masked.
 Of interest are particularly the XKeyEvents XKeyPressed/ReleaseEvents.
 
+### 10.10: Configuration Notifications
+Events for when a windows state changes, such as resizing
+
 ## Ch. 11: Event Handling (cont.)
 
 ### 12.7: Key Encodings

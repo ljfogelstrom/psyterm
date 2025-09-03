@@ -14,7 +14,7 @@
 
 enum WindowMetrics 
 {
-    INIT_X = 10,
+    INIT_X = 0,
     INIT_Y = 10,
     INIT_W = 100,
     INIT_H = 200,
@@ -22,13 +22,23 @@ enum WindowMetrics
     BORDER = 3,
 };
 
+enum Limits
+{
+    BUF_SIZE = 4096,
+    /* ... */
+};
+
+static char buffer[BUF_SIZE]; /* input will be stored here */
+
 
 int
 main(int argc, char *argv[])
 {
-    setlocale(LC_CTYPE, "sv_SE");
+    setlocale(LC_CTYPE, "C");
     XEvent ev; /* used in main loop */
-    char buffer[4] = "\0\0\0";
+    char *test = "Exposed";
+    int stringx = 10;
+    int stringy = 10;
 
     Display *dpy = XOpenDisplay(NULL);
     if (dpy == NULL) err(EXIT_FAILURE, "XOpenDisplay: "); /* defaults to $DISPLAY */
@@ -62,23 +72,20 @@ main(int argc, char *argv[])
     XWindowAttributes return_attribs;
 
     /* logic section */
-    XSelectInput(dpy, win, ExposureMask|KeyPressMask|KeyReleaseMask|ButtonPressMask|ButtonReleaseMask); /* listen for these events */
-
-    int stringx = 10;
-    int stringy = 10;
+    XSelectInput(dpy, win, ExposureMask|KeyPressMask|KeyReleaseMask|
+			    ButtonPressMask|ButtonReleaseMask|
+			    StructureNotifyMask); /* listen for these events */
 
     while (1) 
     {
-
 	XNextEvent(dpy, &ev); /* wait */
 	/* TODO: should add switch statement here
 	 * should handle window resize events (so lines can wrap properly)
 	 */
-	XGetWindowAttributes(dpy, win, &return_attribs); /* will add to resize event */
+	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
 	if (ev.type == Expose) {
 	    XDrawString(dpy, win, gc,
-		    stringx, stringy, buffer, strlen(buffer));
-	    XFlush(dpy);
+		    stringx, stringy, test, strlen(test));
 	} else if (ev.type == KeyPress) {
 	    unsigned int keycode = (unsigned int)ev.xkey.keycode;
 	    KeySym keysym;
@@ -92,6 +99,9 @@ main(int argc, char *argv[])
 		stringx = 0;
 		stringy+= 12;
 	    }
+	} else if (ev.type == ResizeRequest) {
+	    XGetWindowAttributes(dpy, win, &return_attribs);
+	    fprintf(stderr, "resized"); /* doesn't work */
 	}
     }
 
