@@ -58,11 +58,11 @@ main(int argc, char *argv[])
     GC gc = XCreateGC(dpy, win, GCFunction|GCForeground|GCBackground, &gcvals);
 
     XStoreName(dpy, win, "psyterm");
-
+    XMapWindow(dpy, win);
+    XWindowAttributes return_attribs;
 
     /* logic section */
     XSelectInput(dpy, win, ExposureMask|KeyPressMask|KeyReleaseMask|ButtonPressMask|ButtonReleaseMask); /* listen for these events */
-    XMapWindow(dpy, win);
 
     int stringx = 10;
     int stringy = 10;
@@ -74,9 +74,8 @@ main(int argc, char *argv[])
 	/* TODO: should add switch statement here
 	 * should handle window resize events (so lines can wrap properly)
 	 */
+	XGetWindowAttributes(dpy, win, &return_attribs); /* will add to resize event */
 	if (ev.type == Expose) {
-	    XFillRectangle(dpy, win, gc,
-		    11, 10, 100, 10);
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, buffer, strlen(buffer));
 	    XFlush(dpy);
@@ -88,12 +87,11 @@ main(int argc, char *argv[])
 	    fprintf(stderr, "%lu\n", keysym);
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, buffer, strlen(buffer));
-	    XFlush(dpy);
-	}
-	stringx+=5; stringy+=0;
-	if (stringx > 400) {
-	    stringx = 0;
-	    stringy+= 12;
+	    stringx+=7; stringy+=0;
+	    if (stringx > return_attribs.width) {
+		stringx = 0;
+		stringy+= 12;
+	    }
 	}
     }
 
