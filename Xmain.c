@@ -11,6 +11,9 @@
 #include <locale.h>
 #include <err.h>
 #include <string.h>
+#include <ctype.h>
+
+#define FONT_H 12
 
 enum WindowMetrics 
 {
@@ -31,14 +34,43 @@ enum Limits
 static char buffer[BUF_SIZE]; /* input will be stored here */
 
 
+static int stringx = 10;
+static int stringy = 10;
+
+
+void
+carriage_return(void)
+{
+    stringx = INIT_X;
+    stringy += 12;
+}
+
+int
+handle_escape(char chr)
+{
+    char c = chr;
+    if (isprint(c)) return 0;
+    switch (c)
+    {
+	case '\r':
+	    carriage_return();
+	    break;
+	case '\n':
+	    carriage_return();
+	    break;
+	case '\t':
+	    stringx += 25; /* placeholder */
+	    break;
+    }
+    return 1;
+}
+
 int
 main(int argc, char *argv[])
 {
     setlocale(LC_CTYPE, "C");
     XEvent ev; /* used in main loop */
     char *test = "Exposed";
-    int stringx = 10;
-    int stringy = 10;
 
     Display *dpy = XOpenDisplay(NULL);
     if (dpy == NULL) err(EXIT_FAILURE, "XOpenDisplay: "); /* defaults to $DISPLAY */
@@ -69,13 +101,15 @@ main(int argc, char *argv[])
 
     XStoreName(dpy, win, "psyterm");
     XMapWindow(dpy, win);
-    XWindowAttributes return_attribs;
 
     /* logic section */
+    XWindowAttributes return_attribs;
     XSelectInput(dpy, win, ExposureMask|KeyPressMask|KeyReleaseMask|
 			    ButtonPressMask|ButtonReleaseMask|
 			    StructureNotifyMask); /* listen for these events */
 
+    unsigned int keycode = ev.xkey.keycode;
+    KeySym keysym;
     while (1) 
     {
 	XNextEvent(dpy, &ev); /* wait */
@@ -87,11 +121,11 @@ main(int argc, char *argv[])
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, test, strlen(test));
 	} else if (ev.type == KeyPress) {
-	    unsigned int keycode = (unsigned int)ev.xkey.keycode;
-	    KeySym keysym;
 	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL);
 	    /* keycode must be converted to keysym */
-	    fprintf(stderr, "%lu\n", keysym);
+	    if (handle_escape(buffer[0])) continue;
+		fprintf(stderr, "%lu\n", keysym);
+		fprintf(stderr, "%u\n", buffer[0]);
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, buffer, strlen(buffer));
 	    stringx+=7; stringy+=0;
