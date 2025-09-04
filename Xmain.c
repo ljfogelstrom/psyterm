@@ -14,6 +14,7 @@
 #include <ctype.h>
 
 #define FONT_H 12
+#define FONT_W 7 /* placeholder until font support is added */
 
 enum WindowMetrics 
 {
@@ -33,6 +34,11 @@ enum Limits
 
 static char buffer[BUF_SIZE]; /* input will be stored here */
 
+static Display *dpy;
+static int scr; 
+static Window win;
+static GC gc;
+
 
 static int stringx = 10;
 static int stringy = 10;
@@ -42,14 +48,14 @@ void
 carriage_return(void)
 {
     stringx = INIT_X;
-    stringy += 12;
+    stringy += FONT_H;
 }
 
 int
 handle_escape(char chr)
 {
     char c = chr;
-    if (isprint(c)) return 0;
+    if (isprint(c)) return 0; /* doesn't support UTF-8 */
     switch (c)
     {
 	case '\r':
@@ -72,9 +78,9 @@ main(int argc, char *argv[])
     XEvent ev; /* used in main loop */
     char *test = "Exposed";
 
-    Display *dpy = XOpenDisplay(NULL);
+    dpy = XOpenDisplay(NULL);
     if (dpy == NULL) err(EXIT_FAILURE, "XOpenDisplay: "); /* defaults to $DISPLAY */
-    int scr = DefaultScreen(dpy); /* only recommended for single screens */
+    scr = DefaultScreen(dpy); /* only recommended for single screens */
     Window root = RootWindow(dpy, scr);
 
 
@@ -91,13 +97,13 @@ main(int argc, char *argv[])
     };
 
 
-    Window win = XCreateWindow(dpy, root,
+    win = XCreateWindow(dpy, root,
 	    INIT_X, INIT_Y, INIT_W, INIT_H, BORDER,
 	    CopyFromParent, InputOutput, CopyFromParent,
 	    CWBackPixmap|CWBackPixel,
 	    &attribs);
 
-    GC gc = XCreateGC(dpy, win, GCFunction|GCForeground|GCBackground, &gcvals);
+    gc = XCreateGC(dpy, win, GCFunction|GCForeground|GCBackground, &gcvals);
 
     XStoreName(dpy, win, "psyterm");
     XMapWindow(dpy, win);
@@ -128,10 +134,9 @@ main(int argc, char *argv[])
 		fprintf(stderr, "%u\n", buffer[0]);
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, buffer, strlen(buffer));
-	    stringx+=7; stringy+=0;
+	    stringx+=FONT_W;
 	    if (stringx > return_attribs.width) {
-		stringx = 0;
-		stringy+= 12;
+		carriage_return();
 	    }
 	} else if (ev.type == ResizeRequest) {
 	    XGetWindowAttributes(dpy, win, &return_attribs);
