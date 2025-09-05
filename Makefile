@@ -1,12 +1,18 @@
-inc = -lX11
-obj = Xmain.o
+CC = gcc
+CFLAGS = -Wall -Wextra -O2 -fcommon
+LDFLAGS = -lX11
 
-all: psyterm
+SRC_DIR = ./src
+BUILD_DIR = ./build
 
-psyterm: ${obj}
-	${CC} -o $@ ${obj} ${inc}
-	setsid -f ./psyterm
+TARGET = psyterm
 
-%.o: %.c
-	${CC} -c ${obj:.o=.c} ${inc}
+OBJS = $(BUILD_DIR)/Xmain.o $(BUILD_DIR)/ptymain.o
 
+all: always $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) $(CFLAGS) -o $@ $^
+
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+	$(CC) $(CFLAGS) -c $< -o $@
