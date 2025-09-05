@@ -32,6 +32,16 @@ enum Limits
     /* ... */
 };
 
+static struct Cursor {
+    int w; 
+    int h;
+    _Bool isblinking;
+} cursor = {
+    12,
+    2,
+    0,
+};
+
 static char buffer[BUF_SIZE]; /* input will be stored here */
 
 static Display *dpy;
@@ -48,9 +58,9 @@ draw_cursor(unsigned int x, unsigned int y, int visible)
 {
     /* add tracking for previous position? */
     if (visible) {
-	XFillRectangle(dpy, win, gc, stringx + 2, stringy - 10, 2, 12);
+	XFillRectangle(dpy, win, gc, stringx + 2, stringy - 10, cursor.w, cursor.h);
     } else {
-	XClearArea(dpy, win, stringx + 2, stringy - 10, 2, 12, 0);
+	XClearArea(dpy, win, stringx + 2, stringy - 10, 2, cursor.w, cursor.h);
     }
 }
 void
