@@ -39,11 +39,20 @@ static int scr;
 static Window win;
 static GC gc;
 
-
 static int stringx = 10;
 static int stringy = 10;
 
 
+void
+draw_cursor(unsigned int x, unsigned int y, int visible)
+{
+    /* add tracking for previous position? */
+    if (visible) {
+	XFillRectangle(dpy, win, gc, stringx + 2, stringy - 10, 2, 12);
+    } else {
+	XClearArea(dpy, win, stringx + 2, stringy - 10, 2, 12, 0);
+    }
+}
 void
 carriage_return(void)
 {
@@ -124,6 +133,7 @@ main(int argc, char *argv[])
 	 */
 	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
 	if (ev.type == Expose) {
+	    continue; /* only for testing currently */
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, test, strlen(test));
 	} else if (ev.type == KeyPress) {
@@ -132,9 +142,12 @@ main(int argc, char *argv[])
 	    if (handle_escape(buffer[0])) continue;
 		fprintf(stderr, "%lu\n", keysym);
 		fprintf(stderr, "%u\n", buffer[0]);
+	    /* undraw cursor */
+	    draw_cursor(stringx, stringy, 0);
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, buffer, strlen(buffer));
 	    stringx+=FONT_W;
+	    draw_cursor(stringx, stringy, 1);
 	    if (stringx > return_attribs.width) {
 		carriage_return();
 	    }
