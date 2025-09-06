@@ -20,8 +20,8 @@ enum WindowMetrics
 {
     INIT_X = 0,
     INIT_Y = 10,
-    INIT_W = 100,
-    INIT_H = 200,
+    INIT_W = 500,
+    INIT_H = 300,
     /* dimensions can be abritrary values, wm will (should) resize */
     BORDER = 3,
 };
@@ -36,9 +36,11 @@ static struct Cursor {
     int w; 
     int h;
     _Bool isblinking;
+    _Bool isfat;
 } cursor = {
     2,
     12,
+    0,
     0,
 };
 
@@ -57,7 +59,6 @@ static int stringy = 10;
 void
 draw_cursor(unsigned int x, unsigned int y, int visible)
 {
-    /* add tracking for previous position? */
     if (visible) {
 	XFillRectangle(dpy, win, gc, stringx + 2, stringy - 10, cursor.w, cursor.h);
     } else {
@@ -77,6 +78,9 @@ handle_escape(char chr)
 {
     char c = chr;
     if (isprint(c)) return 0; /* doesn't support UTF-8 */
+
+    draw_cursor(0, 0, 0);
+
     switch (c)
     {
 	case '\r':
@@ -89,6 +93,9 @@ handle_escape(char chr)
 	    stringx += 25; /* placeholder */
 	    break;
     }
+
+    draw_cursor(0, 0, 1);
+
     return 1;
 }
 
@@ -146,12 +153,14 @@ main(void)
 	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
 	if (ev.type == Expose) {
 	    continue; /* only for testing currently */
+
 	XDrawString(dpy, win, gc,
 		stringx, stringy, test, strlen(test));
 
 	} else if (ev.type == KeyPress) {
 
 	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
+	    fprintf(stderr, "%d\n", buffer[0]);
 
 	    if (handle_escape(buffer[0])) continue;
 	    /* undraw cursor */
@@ -160,6 +169,7 @@ main(void)
 		    stringx, stringy, buffer, strlen(buffer));
 	    stringx+=FONT_W;
 	    draw_cursor(stringx, stringy, 1);
+
 	    if (stringx > return_attribs.width) {
 		carriage_return();
 	    }
