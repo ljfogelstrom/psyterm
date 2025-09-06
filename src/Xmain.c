@@ -73,6 +73,11 @@ carriage_return(void)
     stringy += FONT_H;
 }
 
+void
+reset_screen(void) {
+    /* stub */
+}
+
 int
 handle_escape(char chr)
 {
@@ -91,6 +96,9 @@ handle_escape(char chr)
 	    break;
 	case '\t':
 	    stringx += 25; /* placeholder */
+	    break;
+	case '\f':
+	    reset_screen();
 	    break;
     }
 
