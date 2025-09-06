@@ -37,8 +37,8 @@ static struct Cursor {
     int h;
     _Bool isblinking;
 } cursor = {
-    12,
     2,
+    12,
     0,
 };
 
@@ -61,7 +61,7 @@ draw_cursor(unsigned int x, unsigned int y, int visible)
     if (visible) {
 	XFillRectangle(dpy, win, gc, stringx + 2, stringy - 10, cursor.w, cursor.h);
     } else {
-	XClearArea(dpy, win, stringx + 2, stringy - 10, 2, cursor.w, cursor.h);
+	XClearArea(dpy, win, stringx + 2, stringy - 10, cursor.w, cursor.h, 0);
     }
 }
 
