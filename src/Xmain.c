@@ -40,7 +40,6 @@ static Window win;
 static GC gc;
 static XEvent ev;
 
-
 static int stringx = 10;
 static int stringy = 10;
 
