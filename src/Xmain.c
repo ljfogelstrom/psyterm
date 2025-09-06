@@ -32,6 +32,16 @@ enum Limits
     /* ... */
 };
 
+static struct Cursor {
+    int w; 
+    int h;
+    _Bool isblinking;
+} cursor = {
+    12,
+    2,
+    0,
+};
+
 static char buffer[BUF_SIZE]; /* input will be stored here */
 
 static Display *dpy;
@@ -43,6 +53,17 @@ static XEvent ev;
 static int stringx = 10;
 static int stringy = 10;
 
+
+void
+draw_cursor(unsigned int x, unsigned int y, int visible)
+{
+    /* add tracking for previous position? */
+    if (visible) {
+	XFillRectangle(dpy, win, gc, stringx + 2, stringy - 10, cursor.w, cursor.h);
+    } else {
+	XClearArea(dpy, win, stringx + 2, stringy - 10, 2, cursor.w, cursor.h);
+    }
+}
 
 void
 carriage_return(void)
@@ -72,7 +93,7 @@ handle_escape(char chr)
 }
 
 int
-main(int argc, char *argv[])
+main(void)
 {
 
     setlocale(LC_CTYPE, "C");
@@ -124,20 +145,21 @@ main(int argc, char *argv[])
 	 */
 	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
 	if (ev.type == Expose) {
-
-	    XDrawString(dpy, win, gc,
-		    stringx, stringy, test, strlen(test));
+	    continue; /* only for testing currently */
+	XDrawString(dpy, win, gc,
+		stringx, stringy, test, strlen(test));
 
 	} else if (ev.type == KeyPress) {
 
 	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
 
 	    if (handle_escape(buffer[0])) continue;
-
+	    /* undraw cursor */
+	    draw_cursor(stringx, stringy, 0);
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, buffer, strlen(buffer));
 	    stringx+=FONT_W;
-
+	    draw_cursor(stringx, stringy, 1);
 	    if (stringx > return_attribs.width) {
 		carriage_return();
 	    }
