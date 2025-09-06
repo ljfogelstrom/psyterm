@@ -7,9 +7,11 @@ BUILD_DIR = ./build
 
 TARGET = psyterm
 
-OBJS = $(BUILD_DIR)/Xmain.o $(BUILD_DIR)/ptymain.o
+OBJS = $(addprefix $(BUILD_DIR)/, Xmain.o ptymain.o)
 
 all: always $(TARGET)
+
+always:
 
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^
