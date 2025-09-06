@@ -32,6 +32,11 @@ enum Limits
     /* ... */
 };
 
+void
+draw(void) {
+    return;
+}
+
 static struct Cursor {
     int x;
     int y;
@@ -39,6 +44,7 @@ static struct Cursor {
     int h;
     _Bool isblinking;
     _Bool isfat;
+    void(*draw);
 } cursor = {
     0,
     0,
@@ -46,6 +52,7 @@ static struct Cursor {
     12,
     0,
     0,
+    draw,
 };
 
 static struct String {
@@ -56,7 +63,8 @@ static struct String {
     FONT_H,
 };
 
-static char buffer[BUF_SIZE]; /* input will be stored here */
+
+char buffer[BUF_SIZE]; /* input will be stored here */
 
 static Display *dpy;
 static int scr; 
@@ -83,12 +91,14 @@ carriage_return(void)
 {
     string.x = INIT_X;
     string.y += FONT_H;
+    // draw_cursor(0, 0, 1);
 }
 
 void
 reset_screen(void) {
     string.x = INIT_X;
     string.y = INIT_Y;
+    // draw_cursor(0, 0, 1);
 }
 
 int
@@ -96,8 +106,6 @@ handle_escape(char chr)
 {
     char c = chr;
     if (isprint(c)) return 0; /* doesn't support UTF-8 */
-
-    draw_cursor(0, 0, 0);
 
     switch (c)
     {
@@ -114,8 +122,6 @@ handle_escape(char chr)
 	    reset_screen();
 	    break;
     }
-
-    draw_cursor(0, 0, 1);
 
     return 1;
 }
@@ -197,9 +203,10 @@ main(void)
 	    }
 
 
+	    draw_cursor(string.x, string.y, 0);
+
 	    if (handle_escape(buffer[0])) continue;
 	    /* undraw cursor */
-	    draw_cursor(string.x, string.y, 0);
 	    XDrawString(dpy, win, gc,
 		    string.x, string.y, buffer, strlen(buffer));
 	    string.x+=FONT_W;
