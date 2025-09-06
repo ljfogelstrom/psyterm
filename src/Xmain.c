@@ -18,8 +18,8 @@
 
 enum WindowMetrics 
 {
-    INIT_X = 0,
-    INIT_Y = 10,
+    INIT_X = 1,
+    INIT_Y = 1,
     INIT_W = 500,
     INIT_H = 300,
     /* dimensions can be abritrary values, wm will (should) resize */
@@ -33,11 +33,15 @@ enum Limits
 };
 
 static struct Cursor {
+    int x;
+    int y;
     int w; 
     int h;
     _Bool isblinking;
     _Bool isfat;
 } cursor = {
+    0,
+    0,
     2,
     12,
     0,
@@ -59,10 +63,12 @@ static int stringy = 10;
 void
 draw_cursor(unsigned int x, unsigned int y, int visible)
 {
+    cursor.x = stringx + 2;
+    cursor.y = stringy - 10;
     if (visible) {
-	XFillRectangle(dpy, win, gc, stringx + 2, stringy - 10, cursor.w, cursor.h);
+	XFillRectangle(dpy, win, gc, cursor.x, cursor.y, cursor.w, cursor.h);
     } else {
-	XClearArea(dpy, win, stringx + 2, stringy - 10, cursor.w, cursor.h, 0);
+	XClearArea(dpy, win, cursor.x, cursor.y, cursor.w, cursor.h, 0);
     }
 }
 
@@ -75,7 +81,8 @@ carriage_return(void)
 
 void
 reset_screen(void) {
-    /* stub */
+    cursor.x = INIT_X;
+    cursor.y = INIT_Y;
 }
 
 int
