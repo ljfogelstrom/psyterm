@@ -165,6 +165,9 @@ main(void)
     unsigned int keycode = ev.xkey.keycode;
     KeySym keysym;
 
+    unsigned char *composed = (unsigned char*)calloc(2048, sizeof(char));
+    int i = 0;
+
     while (1) 
     {
 	XNextEvent(dpy, &ev); /* wait */
@@ -182,6 +185,17 @@ main(void)
 
 	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
 	    fprintf(stderr, "%d\n", buffer[0]);
+	    composed[i] = buffer[0];
+
+	    if (composed[i] == '\r') {
+		fprintf(stderr, "%s\n", composed);
+		/* write_out */
+		composed = (unsigned char*)calloc(2048, sizeof(char));
+		i = 0;
+	    } else {
+		i++;
+	    }
+
 
 	    if (handle_escape(buffer[0])) continue;
 	    /* undraw cursor */
