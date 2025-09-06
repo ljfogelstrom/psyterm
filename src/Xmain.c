@@ -38,6 +38,7 @@ static Display *dpy;
 static int scr; 
 static Window win;
 static GC gc;
+static XEvent ev;
 
 
 static int stringx = 10;
@@ -74,15 +75,14 @@ handle_escape(char chr)
 int
 main(int argc, char *argv[])
 {
+
     setlocale(LC_CTYPE, "C");
-    XEvent ev; /* used in main loop */
     char *test = "Exposed";
 
     dpy = XOpenDisplay(NULL);
     if (dpy == NULL) err(EXIT_FAILURE, "XOpenDisplay: "); /* defaults to $DISPLAY */
     scr = DefaultScreen(dpy); /* only recommended for single screens */
     Window root = RootWindow(dpy, scr);
-
 
     /* graphics section */
     XSetWindowAttributes attribs = {
@@ -116,6 +116,7 @@ main(int argc, char *argv[])
 
     unsigned int keycode = ev.xkey.keycode;
     KeySym keysym;
+
     while (1) 
     {
 	XNextEvent(dpy, &ev); /* wait */
@@ -124,23 +125,29 @@ main(int argc, char *argv[])
 	 */
 	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
 	if (ev.type == Expose) {
+
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, test, strlen(test));
+
 	} else if (ev.type == KeyPress) {
-	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL);
-	    /* keycode must be converted to keysym */
+
+	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
+
 	    if (handle_escape(buffer[0])) continue;
-		fprintf(stderr, "%lu\n", keysym);
-		fprintf(stderr, "%u\n", buffer[0]);
+
 	    XDrawString(dpy, win, gc,
 		    stringx, stringy, buffer, strlen(buffer));
 	    stringx+=FONT_W;
+
 	    if (stringx > return_attribs.width) {
 		carriage_return();
 	    }
+
 	} else if (ev.type == ResizeRequest) {
+
 	    XGetWindowAttributes(dpy, win, &return_attribs);
 	    fprintf(stderr, "resized"); /* doesn't work */
+
 	}
     }
 
