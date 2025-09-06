@@ -48,6 +48,14 @@ static struct Cursor {
     0,
 };
 
+static struct String {
+    int x;
+    int y;
+} string = {
+    INIT_X,
+    FONT_H,
+};
+
 static char buffer[BUF_SIZE]; /* input will be stored here */
 
 static Display *dpy;
@@ -56,15 +64,13 @@ static Window win;
 static GC gc;
 static XEvent ev;
 
-static int stringx = 10;
-static int stringy = 10;
 
 
 void
 draw_cursor(unsigned int x, unsigned int y, int visible)
 {
-    cursor.x = stringx + 2;
-    cursor.y = stringy - 10;
+    cursor.x = string.x + 2;
+    cursor.y = string.y - 10;
     if (visible) {
 	XFillRectangle(dpy, win, gc, cursor.x, cursor.y, cursor.w, cursor.h);
     } else {
@@ -75,14 +81,14 @@ draw_cursor(unsigned int x, unsigned int y, int visible)
 void
 carriage_return(void)
 {
-    stringx = INIT_X;
-    stringy += FONT_H;
+    string.x = INIT_X;
+    string.y += FONT_H;
 }
 
 void
 reset_screen(void) {
-    cursor.x = INIT_X;
-    cursor.y = INIT_Y;
+    string.x = INIT_X;
+    string.y = INIT_Y;
 }
 
 int
@@ -102,7 +108,7 @@ handle_escape(char chr)
 	    carriage_return();
 	    break;
 	case '\t':
-	    stringx += 25; /* placeholder */
+	    string.x += 25; /* placeholder */
 	    break;
 	case '\f':
 	    reset_screen();
@@ -170,7 +176,7 @@ main(void)
 	    continue; /* only for testing currently */
 
 	XDrawString(dpy, win, gc,
-		stringx, stringy, test, strlen(test));
+		string.x, string.y, test, strlen(test));
 
 	} else if (ev.type == KeyPress) {
 
@@ -179,13 +185,13 @@ main(void)
 
 	    if (handle_escape(buffer[0])) continue;
 	    /* undraw cursor */
-	    draw_cursor(stringx, stringy, 0);
+	    draw_cursor(string.x, string.y, 0);
 	    XDrawString(dpy, win, gc,
-		    stringx, stringy, buffer, strlen(buffer));
-	    stringx+=FONT_W;
-	    draw_cursor(stringx, stringy, 1);
+		    string.x, string.y, buffer, strlen(buffer));
+	    string.x+=FONT_W;
+	    draw_cursor(string.x, string.y, 1);
 
-	    if (stringx > return_attribs.width) {
+	    if (string.x > return_attribs.width) {
 		carriage_return();
 	    }
 
