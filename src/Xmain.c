@@ -38,7 +38,8 @@ void repo (int, int);
 void carriage_return(void);
 void reset_screen(void);
 int compose_input(char*, int);
-int write_to_stdin(char*);
+int write_to_pipe(char*);
+int read_from_pipe(char*);
 
 static Display *dpy;
 static int scr; 
@@ -124,7 +125,7 @@ compose_input(char comp[], int i)
     comp[i] = buffer[0];
 
     if (comp[i] == '\r') {
-	write_to_stdin(comp);
+	write_to_pipe(comp);
 	memset(comp, 0, 2048);
 	return 0;
     } else {
@@ -136,7 +137,7 @@ compose_input(char comp[], int i)
 }
 
 int
-write_to_stdin(char* input)
+write_to_pipe(char* input)
 {
 
     puts(input);
@@ -148,7 +149,6 @@ carriage_return(void)
 {
     string.x = INIT_X;
     string.y += FONT_H;
-    // draw_cursor(0, 0, 1);
     cursor.draw(string.x, string.y, 1);
 }
 
@@ -156,8 +156,7 @@ void
 reset_screen(void) {
     XClearWindow(dpy, win);
     string.x = INIT_X;
-    string.y = INIT_Y;
-    // draw_cursor(0, 0, 1);
+    string.y = FONT_H;
     cursor.draw(string.x, string.y, 1);
 }
 
