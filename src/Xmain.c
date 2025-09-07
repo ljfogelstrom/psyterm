@@ -37,6 +37,7 @@ void draw (int, int, int);
 void repo (int, int);
 void carriage_return(void);
 void reset_screen(void);
+int compose_input(unsigned char*, int);
 
 static Display *dpy;
 static int scr; 
@@ -110,6 +111,24 @@ draw_cursor(unsigned int x, unsigned int y, int visible)
     } else {
 	XClearArea(dpy, win, cursor.x, cursor.y, cursor.w, cursor.h, 0);
     }
+}
+
+int
+compose_input(unsigned char* comp, int i)
+{
+
+    comp[i] = buffer[0];
+
+    if (comp[i] == '\r') {
+	fprintf(stderr, "%s\n", comp);
+	/* write_out */
+	comp = (unsigned char*)calloc(2048, sizeof(char));
+	return 0;
+    } else {
+	return 1;
+    }
+
+
 }
 
 void
@@ -219,16 +238,8 @@ main(void)
 
 	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
 	    fprintf(stderr, "%d\n", buffer[0]);
-	    composed[i] = buffer[0];
 
-	    if (composed[i] == '\r') {
-		fprintf(stderr, "%s\n", composed);
-		/* write_out */
-		composed = (unsigned char*)calloc(2048, sizeof(char));
-		i = 0;
-	    } else {
-		i++;
-	    }
+	    compose_input(composed, i) ? i++ : (i = 0);
 
 	    cursor.draw(string.x, string.y, 0);
 
