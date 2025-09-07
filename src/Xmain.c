@@ -37,13 +37,16 @@ void draw (int, int, int);
 void repo (int, int);
 void carriage_return(void);
 void reset_screen(void);
-int compose_input(unsigned char*, int);
+int compose_input(char*, int);
+int write_to_stdin(char*);
 
 static Display *dpy;
 static int scr; 
 static Window win;
 static GC gc;
 static XEvent ev;
+
+static int counter;
 
 static struct Cursor {
     int x;
@@ -97,6 +100,7 @@ static struct String {
 
 
 char buffer[BUF_SIZE]; /* input will be stored here */
+static char composed[2048];
 
 
 
@@ -114,21 +118,29 @@ draw_cursor(unsigned int x, unsigned int y, int visible)
 }
 
 int
-compose_input(unsigned char* comp, int i)
+compose_input(char comp[], int i)
 {
 
     comp[i] = buffer[0];
 
     if (comp[i] == '\r') {
-	fprintf(stderr, "%s\n", comp);
-	/* write_out */
-	comp = (unsigned char*)calloc(2048, sizeof(char));
+	write_to_stdin(comp);
+	memset(comp, 0, 2048);
 	return 0;
     } else {
+	counter++;
 	return 1;
     }
 
 
+}
+
+int
+write_to_stdin(char* input)
+{
+
+    puts(input);
+    return 0;
 }
 
 void
@@ -218,7 +230,6 @@ main(void)
     unsigned int keycode = ev.xkey.keycode;
     KeySym keysym;
 
-    unsigned char *composed = (unsigned char*)calloc(2048, sizeof(char));
     int i = 0;
 
     while (1) 
