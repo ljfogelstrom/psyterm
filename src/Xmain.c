@@ -32,10 +32,17 @@ enum Limits
     /* ... */
 };
 
-void
-draw(void) {
-    return;
-}
+
+void draw (int, int, int);
+void repo (int, int);
+void carriage_return(void);
+void reset_screen(void);
+
+static Display *dpy;
+static int scr; 
+static Window win;
+static GC gc;
+static XEvent ev;
 
 static struct Cursor {
     int x;
@@ -44,7 +51,8 @@ static struct Cursor {
     int h;
     _Bool isblinking;
     _Bool isfat;
-    void(*draw);
+    void(*draw)(int, int, int);
+    void(*repo)(int, int);
 } cursor = {
     0,
     0,
@@ -53,7 +61,30 @@ static struct Cursor {
     0,
     0,
     draw,
+    repo,
 };
+
+void
+draw(int x, int y, int visible)
+{
+
+    cursor.repo(x, y);
+
+    if (visible) {
+	XFillRectangle(dpy, win, gc, cursor.x, cursor.y, cursor.w, cursor.h);
+    } else {
+	XClearArea(dpy, win, cursor.x, cursor.y, cursor.w, cursor.h, 0);
+    }
+
+    return;
+}
+
+void
+repo(int x, int y)
+{
+    cursor.x = x;
+    cursor.y = y - FONT_H + 2;
+}
 
 static struct String {
     int x;
@@ -66,11 +97,6 @@ static struct String {
 
 char buffer[BUF_SIZE]; /* input will be stored here */
 
-static Display *dpy;
-static int scr; 
-static Window win;
-static GC gc;
-static XEvent ev;
 
 
 
@@ -92,6 +118,7 @@ carriage_return(void)
     string.x = INIT_X;
     string.y += FONT_H;
     // draw_cursor(0, 0, 1);
+    cursor.draw(string.x, string.y, 1);
 }
 
 void
@@ -99,6 +126,7 @@ reset_screen(void) {
     string.x = INIT_X;
     string.y = INIT_Y;
     // draw_cursor(0, 0, 1);
+    cursor.draw(string.x, string.y, 1);
 }
 
 int
@@ -202,15 +230,15 @@ main(void)
 		i++;
 	    }
 
-
-	    draw_cursor(string.x, string.y, 0);
+	    cursor.draw(string.x, string.y, 0);
 
 	    if (handle_escape(buffer[0])) continue;
 	    /* undraw cursor */
 	    XDrawString(dpy, win, gc,
 		    string.x, string.y, buffer, strlen(buffer));
 	    string.x+=FONT_W;
-	    draw_cursor(string.x, string.y, 1);
+	    
+	    cursor.draw(string.x, string.y, 1);
 
 	    if (string.x > return_attribs.width) {
 		carriage_return();
