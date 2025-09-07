@@ -32,6 +32,18 @@ enum Limits
     /* ... */
 };
 
+
+void draw (int, int, int);
+void repo (int, int);
+void carriage_return(void);
+void reset_screen(void);
+
+static Display *dpy;
+static int scr; 
+static Window win;
+static GC gc;
+static XEvent ev;
+
 static struct Cursor {
     int x;
     int y;
@@ -39,6 +51,8 @@ static struct Cursor {
     int h;
     _Bool isblinking;
     _Bool isfat;
+    void(*draw)(int, int, int);
+    void(*repo)(int, int);
 } cursor = {
     0,
     0,
@@ -46,7 +60,31 @@ static struct Cursor {
     12,
     0,
     0,
+    draw,
+    repo,
 };
+
+void
+draw(int x, int y, int visible)
+{
+
+    cursor.repo(x, y);
+
+    if (visible) {
+	XFillRectangle(dpy, win, gc, cursor.x, cursor.y, cursor.w, cursor.h);
+    } else {
+	XClearArea(dpy, win, cursor.x, cursor.y, cursor.w, cursor.h, 0);
+    }
+
+    return;
+}
+
+void
+repo(int x, int y)
+{
+    cursor.x = x;
+    cursor.y = y - FONT_H + 2;
+}
 
 static struct String {
     int x;
@@ -56,13 +94,9 @@ static struct String {
     FONT_H,
 };
 
-static char buffer[BUF_SIZE]; /* input will be stored here */
 
-static Display *dpy;
-static int scr; 
-static Window win;
-static GC gc;
-static XEvent ev;
+char buffer[BUF_SIZE]; /* input will be stored here */
+
 
 
 
@@ -83,13 +117,17 @@ carriage_return(void)
 {
     string.x = INIT_X;
     string.y += FONT_H;
+    // draw_cursor(0, 0, 1);
+    cursor.draw(string.x, string.y, 1);
 }
 
 void
 reset_screen(void) {
     XClearWindow(dpy, win);
     string.x = INIT_X;
-    string.y = FONT_H;
+    string.y = INIT_Y;
+    // draw_cursor(0, 0, 1);
+    cursor.draw(string.x, string.y, 1);
 }
 
 int
@@ -97,8 +135,6 @@ handle_escape(char chr)
 {
     char c = chr;
     if (isprint(c)) return 0; /* doesn't support UTF-8 */
-
-    draw_cursor(0, 0, 0);
 
     switch (c)
     {
@@ -115,8 +151,6 @@ handle_escape(char chr)
 	    reset_screen();
 	    break;
     }
-
-    draw_cursor(0, 0, 1);
 
     return 1;
 }
@@ -165,6 +199,9 @@ main(void)
     unsigned int keycode = ev.xkey.keycode;
     KeySym keysym;
 
+    unsigned char *composed = (unsigned char*)calloc(2048, sizeof(char));
+    int i = 0;
+
     while (1) 
     {
 	XNextEvent(dpy, &ev); /* wait */
@@ -182,14 +219,26 @@ main(void)
 
 	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
 	    fprintf(stderr, "%d\n", buffer[0]);
+	    composed[i] = buffer[0];
+
+	    if (composed[i] == '\r') {
+		fprintf(stderr, "%s\n", composed);
+		/* write_out */
+		composed = (unsigned char*)calloc(2048, sizeof(char));
+		i = 0;
+	    } else {
+		i++;
+	    }
+
+	    cursor.draw(string.x, string.y, 0);
 
 	    if (handle_escape(buffer[0])) continue;
 	    /* undraw cursor */
-	    draw_cursor(string.x, string.y, 0);
 	    XDrawString(dpy, win, gc,
 		    string.x, string.y, buffer, strlen(buffer));
 	    string.x+=FONT_W;
-	    draw_cursor(string.x, string.y, 1);
+	    
+	    cursor.draw(string.x, string.y, 1);
 
 	    if (string.x > return_attribs.width) {
 		carriage_return();
