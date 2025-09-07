@@ -87,8 +87,9 @@ carriage_return(void)
 
 void
 reset_screen(void) {
+    XClearWindow(dpy, win);
     string.x = INIT_X;
-    string.y = INIT_Y;
+    string.y = FONT_H;
 }
 
 int
@@ -143,7 +144,6 @@ main(void)
 	.foreground = WhitePixel(dpy, scr),
 	.background = WhitePixel(dpy, scr),
     };
-
 
     win = XCreateWindow(dpy, root,
 	    INIT_X, INIT_Y, INIT_W, INIT_H, BORDER,
