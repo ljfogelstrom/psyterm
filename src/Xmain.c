@@ -19,7 +19,7 @@
 enum WindowMetrics 
 {
     INIT_X = 1,
-    INIT_Y = 1,
+    INIT_Y = FONT_H,
     INIT_W = 500,
     INIT_H = 300,
     /* dimensions can be abritrary values, wm will (should) resize */
@@ -29,6 +29,7 @@ enum WindowMetrics
 enum Limits
 {
     BUF_SIZE = 4096,
+    COMP_SIZE = 4096,
     /* ... */
 };
 
@@ -59,14 +60,9 @@ static struct Cursor {
     void(*draw)(int, int, int);
     void(*repo)(int, int);
 } cursor = {
-    0,
-    0,
-    2,
-    12,
-    0,
-    0,
-    draw,
-    repo,
+    0, 0, 2, 12,
+    0, 0,
+    draw, repo,
 };
 
 void
@@ -96,12 +92,12 @@ static struct String {
     int y;
 } string = {
     INIT_X,
-    FONT_H,
+    INIT_Y,
 };
 
 
 char buffer[BUF_SIZE]; /* input will be stored here */
-static char composed[2048];
+static char composed[COMP_SIZE];
 
 
 
@@ -126,7 +122,7 @@ compose_input(char comp[], int i)
 int
 write_to_pipe(char* input)
 {
-
+    /* placeholder */
     puts(input);
     return 0;
 }
@@ -202,7 +198,9 @@ main(void)
 	    CWBackPixmap|CWBackPixel,
 	    &attribs);
 
-    gc = XCreateGC(dpy, win, GCFunction|GCForeground|GCBackground, &gcvals);
+    gc = XCreateGC(dpy, win, 
+	    GCFunction|GCForeground|GCBackground, 
+	    &gcvals);
 
     XStoreName(dpy, win, "psyterm");
     XMapWindow(dpy, win);
@@ -213,7 +211,6 @@ main(void)
 			    ButtonPressMask|ButtonReleaseMask|
 			    StructureNotifyMask); /* listen for these events */
 
-    unsigned int keycode = ev.xkey.keycode;
     KeySym keysym;
 
     int i = 0;
