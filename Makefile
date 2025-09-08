@@ -14,7 +14,13 @@ all: always $(TARGET)
 always:
 
 $(TARGET): $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $@ $^
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
-	$(CC) $(CFLAGS) -c $< -o $@
+	$(CC) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
+
+always:
+	mkdir -p $(BUILD_DIR)
+
+clean:
+	rm -rf $(BUILD_DIR) $(TARGET)
