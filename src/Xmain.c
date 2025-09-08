@@ -14,7 +14,7 @@
 #include <ctype.h>
 
 #define FONT_H 12
-#define FONT_W 7 /* placeholder until font support is added */
+#define FONT_W 6 /* placeholder until font support is added */
 
 enum WindowMetrics 
 {
