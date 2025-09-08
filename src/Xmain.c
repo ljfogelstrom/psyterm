@@ -100,11 +100,41 @@ char buffer[BUF_SIZE]; /* input will be stored here */
 static char composed[COMP_SIZE];
 
 
+char *testbuf = "Lorem ipsum dolor sit amet,"
+		" consectetur adipiscing elit,"
+		" sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,"
+		" quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat."
+		" Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur."
+		" Excepteur sint occaecat cupidatat non proident,"
+		"sunt in culpa qui officia deserunt mollit anim id est laborum.";
+
+int
+printbuf(char* buf, size_t buflen, int win_width)
+{
+    char* lb = buf;
+    int columns = win_width / FONT_W; /* not really columns */
+    int rows = buflen / columns;
+    int last_row_len = buflen % columns;
+
+    carriage_return();
+
+    int i;
+    char tokens[rows][columns];
+    for (i = 0; i < rows; i++){
+	memcpy(tokens[i], lb, columns);
+	XDrawString(dpy, win, gc, string.x, string.y, tokens[i], columns);
+	lb+=columns;
+	carriage_return();
+    }
+
+    if (last_row_len) XDrawString(dpy, win, gc, string.x, string.y, lb, last_row_len);
+
+    return 0;
+}
 
 int
 compose_input(char comp[], int i)
 {
-
     comp[i] = buffer[0];
 
     if (comp[i] == '\r') {
@@ -115,8 +145,6 @@ compose_input(char comp[], int i)
 	counter++;
 	return 1;
     }
-
-
 }
 
 int
@@ -132,7 +160,7 @@ carriage_return(void)
 {
     string.x = INIT_X;
     string.y += FONT_H;
-    cursor.draw(string.x, string.y, 1);
+    /* cursor.draw(string.x, string.y, 1); */
 }
 
 void
@@ -223,6 +251,7 @@ main(void)
 	 */
 	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
 	if (ev.type == Expose) {
+	    printbuf(testbuf, strlen(testbuf), return_attribs.width);
 	    continue; /* only for testing currently */
 
 	XDrawString(dpy, win, gc,
