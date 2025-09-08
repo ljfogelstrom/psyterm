@@ -105,19 +105,6 @@ static char composed[2048];
 
 
 
-
-void
-draw_cursor(unsigned int x, unsigned int y, int visible)
-{
-    cursor.x = string.x + 2;
-    cursor.y = string.y - 10;
-    if (visible) {
-	XFillRectangle(dpy, win, gc, cursor.x, cursor.y, cursor.w, cursor.h);
-    } else {
-	XClearArea(dpy, win, cursor.x, cursor.y, cursor.w, cursor.h, 0);
-    }
-}
-
 int
 compose_input(char comp[], int i)
 {
