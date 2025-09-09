@@ -1,8 +1,8 @@
 #ifndef XMAIN_H
 #define XMAIN_H
 
-void draw (int, int, int);
-void repo (int, int);
+void draw(int, int, int);
+void repo(int, int);
 void carriage_return(void);
 void reset_screen(void);
 int compose_input(char*, int);

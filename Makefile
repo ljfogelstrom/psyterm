@@ -11,8 +11,6 @@ OBJS = $(addprefix $(BUILD_DIR)/, Xmain.o ptymain.o)
 
 all: always $(TARGET)
 
-always:
-
 $(TARGET): $(OBJS)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
 
