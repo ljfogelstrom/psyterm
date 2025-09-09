@@ -194,7 +194,6 @@ main(void)
 {
 
     setlocale(LC_CTYPE, "C");
-    char *test = "Exposed";
 
     dpy = XOpenDisplay(NULL);
     if (dpy == NULL) err(EXIT_FAILURE, "XOpenDisplay: "); /* defaults to $DISPLAY */
@@ -244,11 +243,9 @@ main(void)
 	 */
 	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
 	if (ev.type == Expose) {
+
 	    printbuf(testbuf, strlen(testbuf), return_attribs.width);
 	    continue; /* only for testing currently */
-
-	XDrawString(dpy, win, gc,
-		string.x, string.y, test, strlen(test));
 
 	} else if (ev.type == KeyPress) {
 
