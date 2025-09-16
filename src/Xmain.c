@@ -12,6 +12,7 @@
 #include <err.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/select.h>
 
 #define FONT_H 12
 #define FONT_W 6 /* placeholder until font support is added */
@@ -34,6 +35,7 @@ enum Limits
 };
 
 #include "Xmain.h"
+#include "ptymain.h"
 
 static Display *dpy;
 static int scr; 
@@ -224,6 +226,7 @@ main(void)
 
     XStoreName(dpy, win, "psyterm");
     XMapWindow(dpy, win);
+    XFlush(dpy);
 
     /* logic section */
     XWindowAttributes return_attribs;
@@ -235,45 +238,74 @@ main(void)
 
     int i = 0;
 
+    /* get pty, xwin master fd */
+    int fd_master = init_pty();
+    int fd_xwin = ConnectionNumber(dpy);
+
+    fd_set fds;
+    int nfds = (fd_master > fd_xwin ? fd_master : fd_xwin) + 1; 
+    
+    /* main loop */
     while (1) 
     {
-	XNextEvent(dpy, &ev); /* wait */
-	/* TODO: should add switch statement here
-	 * should handle window resize events (so lines can wrap properly)
-	 */
-	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
-	if (ev.type == Expose) {
+        /* reset file descriptor set */
+        reset_pty(&fds, fd_master, fd_xwin);
+        nfds = (fd_master > fd_xwin ? fd_master : fd_xwin) + 1;
 
-	    printbuf(testbuf, strlen(testbuf), return_attribs.width);
-	    continue; /* only for testing currently */
+        if (select(nfds, &fds, NULL, NULL, NULL) == -1) {
+            perror("select");
+            exit(1);
+        }
 
-	} else if (ev.type == KeyPress) {
+        /* pty is ready for i/o */
+        if (FD_ISSET(fd_master, &fds)) {
+            
+        } 
+        
+        /* xwin is ready for i/o (events available) */
+        if (FD_ISSET(fd_xwin, &fds)) {
+            
+            while (XPending(dpy))
+            {
+                XNextEvent(dpy, &ev); /* wait */
+                /* TODO: should add switch statement here
+                * should handle window resize events (so lines can wrap properly)
+                */
+                XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
+                if (ev.type == Expose) {
 
-	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
-	    fprintf(stderr, "%d\n", buffer[0]);
+                    printbuf(testbuf, strlen(testbuf), return_attribs.width);
+                    continue; /* only for testing currently */
 
-	    compose_input(composed, i) ? i++ : (i = 0);
+                } else if (ev.type == KeyPress) {
 
-	    cursor.draw(string.x, string.y, 0);
+                    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
+                    fprintf(stderr, "%d\n", buffer[0]);
 
-	    if (handle_escape(buffer[0])) continue;
-	    /* undraw cursor */
-	    XDrawString(dpy, win, gc,
-		    string.x, string.y, buffer, strlen(buffer));
-	    string.x+=FONT_W;
-	    
-	    cursor.draw(string.x, string.y, 1);
+                    compose_input(composed, i) ? i++ : (i = 0);
 
-	    if (string.x > return_attribs.width) {
-		carriage_return();
-	    }
+                    cursor.draw(string.x, string.y, 0);
 
-	} else if (ev.type == ResizeRequest) {
+                    if (handle_escape(buffer[0])) continue;
+                    /* undraw cursor */
+                    XDrawString(dpy, win, gc,
+                        string.x, string.y, buffer, strlen(buffer));
+                    string.x+=FONT_W;
+                    
+                    cursor.draw(string.x, string.y, 1);
 
-	    XGetWindowAttributes(dpy, win, &return_attribs);
-	    fprintf(stderr, "resized"); /* doesn't work */
+                    if (string.x > return_attribs.width) {
+                    carriage_return();
+                    }
 
-	}
+                } else if (ev.type == ResizeRequest) {
+
+                    XGetWindowAttributes(dpy, win, &return_attribs);
+                    fprintf(stderr, "resized"); /* doesn't work */
+
+                }
+            }
+        }   
     }
 
     XDestroyWindow(dpy, win);
