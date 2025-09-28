@@ -42,6 +42,7 @@ static int scr;
 static Window win;
 static GC gc;
 static XEvent ev;
+static XWindowAttributes return_attribs;
 
 static int counter;
 
@@ -130,7 +131,8 @@ printbuf(char* buf, size_t buflen, int win_width)
 int
 compose_input(char comp[], int i)
 {
-    comp[i] = buffer[0];
+    if (buffer[0])
+	comp[i] = buffer[0];
 
     if (comp[i] == '\r') {
 	write_to_pipe(comp);
@@ -147,7 +149,11 @@ write_to_pipe(char* input)
 {
     /* placeholder */
     puts(input);
-    write(fd_master, input, 8);
+    write(fd_master, input, 64);
+    char *temp = calloc(256, sizeof(char));
+    read(fd_master, temp, 256);
+    puts(temp);
+    printbuf(temp, 256, return_attribs.width);
 
     return 0;
 }
@@ -231,7 +237,6 @@ main(void)
     XFlush(dpy);
 
     /* logic section */
-    XWindowAttributes return_attribs;
     XSelectInput(dpy, win, ExposureMask|KeyPressMask|KeyReleaseMask|
 			    ButtonPressMask|ButtonReleaseMask|
 			    StructureNotifyMask); /* listen for these events */
@@ -258,7 +263,6 @@ main(void)
 
         /* pty is ready for i/o */
         if (FD_ISSET(fd_master, &fds)) {
-            fprintf(stderr, "hello");
         } 
         
         /* xwin is ready for i/o (events available) */
