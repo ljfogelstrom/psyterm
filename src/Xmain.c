@@ -147,6 +147,8 @@ write_to_pipe(char* input)
 {
     /* placeholder */
     puts(input);
+    write(fd_master, input, 8);
+
     return 0;
 }
 
@@ -239,11 +241,8 @@ main(void)
     int i = 0;
 
     /* get pty, xwin master fd */
-    int fd_master = init_pty();
-    int fd_xwin = ConnectionNumber(dpy);
-
-    fd_set fds;
-    int nfds = (fd_master > fd_xwin ? fd_master : fd_xwin) + 1; 
+    fd_master = init_pty();
+    fd_xwin = ConnectionNumber(dpy);
     
     /* main loop */
     while (1) 
@@ -259,53 +258,47 @@ main(void)
 
         /* pty is ready for i/o */
         if (FD_ISSET(fd_master, &fds)) {
-            
+            fprintf(stderr, "hello");
         } 
         
         /* xwin is ready for i/o (events available) */
-        if (FD_ISSET(fd_xwin, &fds)) {
-            
-            while (XPending(dpy))
-            {
-                XNextEvent(dpy, &ev); /* wait */
-                /* TODO: should add switch statement here
-                * should handle window resize events (so lines can wrap properly)
-                */
-                XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
-                if (ev.type == Expose) {
+	    XNextEvent(dpy, &ev); /* wait */
+	    /* TODO: should add switch statement here
+	    * should handle window resize events (so lines can wrap properly)
+	    */
+	    XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
+	    if (ev.type == Expose) {
 
-                    printbuf(testbuf, strlen(testbuf), return_attribs.width);
-                    continue; /* only for testing currently */
+		printbuf(testbuf, strlen(testbuf), return_attribs.width);
+		continue; /* only for testing currently */
 
-                } else if (ev.type == KeyPress) {
+	    } else if (ev.type == KeyPress) {
 
-                    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
-                    fprintf(stderr, "%d\n", buffer[0]);
+		XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
+		fprintf(stderr, "%d\n", buffer[0]);
 
-                    compose_input(composed, i) ? i++ : (i = 0);
+		compose_input(composed, i) ? i++ : (i = 0);
 
-                    cursor.draw(string.x, string.y, 0);
+		cursor.draw(string.x, string.y, 0);
 
-                    if (handle_escape(buffer[0])) continue;
-                    /* undraw cursor */
-                    XDrawString(dpy, win, gc,
-                        string.x, string.y, buffer, strlen(buffer));
-                    string.x+=FONT_W;
-                    
-                    cursor.draw(string.x, string.y, 1);
+		if (handle_escape(buffer[0])) continue;
+		/* undraw cursor */
+		XDrawString(dpy, win, gc,
+		    string.x, string.y, buffer, strlen(buffer));
+		string.x+=FONT_W;
+		
+		cursor.draw(string.x, string.y, 1);
 
-                    if (string.x > return_attribs.width) {
-                    carriage_return();
-                    }
+		if (string.x > return_attribs.width) {
+		carriage_return();
+		}
 
-                } else if (ev.type == ResizeRequest) {
+	    } else if (ev.type == ResizeRequest) {
 
-                    XGetWindowAttributes(dpy, win, &return_attribs);
-                    fprintf(stderr, "resized"); /* doesn't work */
+		XGetWindowAttributes(dpy, win, &return_attribs);
+		fprintf(stderr, "resized"); /* doesn't work */
 
-                }
-            }
-        }   
+	}
     }
 
     XDestroyWindow(dpy, win);
