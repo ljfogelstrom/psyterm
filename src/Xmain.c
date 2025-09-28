@@ -108,6 +108,11 @@ int
 printbuf(char* buf, size_t buflen, int win_width)
 {
     char* lb = buf;
+    for (int i = 0; i < buflen; i++) {
+	if (!isprint(*(lb+i)))
+	    *(lb+i) = 0x20;
+    }
+
     int columns = win_width / FONT_W; /* not really columns */
     int rows = buflen / columns;
     int last_row_len = buflen % columns;
