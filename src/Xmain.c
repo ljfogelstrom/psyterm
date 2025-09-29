@@ -12,6 +12,7 @@
 #include <err.h>
 #include <string.h>
 #include <ctype.h>
+#include <sys/select.h>
 
 #define FONT_H 12
 #define FONT_W 6 /* placeholder until font support is added */
@@ -34,12 +35,14 @@ enum Limits
 };
 
 #include "Xmain.h"
+#include "ptymain.h"
 
 static Display *dpy;
 static int scr; 
 static Window win;
 static GC gc;
 static XEvent ev;
+static XWindowAttributes return_attribs;
 
 static int counter;
 
@@ -105,6 +108,11 @@ int
 printbuf(char* buf, size_t buflen, int win_width)
 {
     char* lb = buf;
+    for (int i = 0; i < buflen; i++) {
+	if (!isprint(*(lb+i)))
+	    *(lb+i) = 0x20;
+    }
+
     int columns = win_width / FONT_W; /* not really columns */
     int rows = buflen / columns;
     int last_row_len = buflen % columns;
@@ -128,7 +136,8 @@ printbuf(char* buf, size_t buflen, int win_width)
 int
 compose_input(char comp[], int i)
 {
-    comp[i] = buffer[0];
+    if (buffer[0])
+	comp[i] = buffer[0];
 
     if (comp[i] == '\r') {
 	write_to_pipe(comp);
@@ -145,6 +154,12 @@ write_to_pipe(char* input)
 {
     /* placeholder */
     puts(input);
+    write(fd_master, input, 64);
+    char *temp = calloc(256, sizeof(char));
+    read(fd_master, temp, 256);
+    puts(temp);
+    printbuf(temp, 256, return_attribs.width);
+
     return 0;
 }
 
@@ -224,9 +239,9 @@ main(void)
 
     XStoreName(dpy, win, "psyterm");
     XMapWindow(dpy, win);
+    XFlush(dpy);
 
     /* logic section */
-    XWindowAttributes return_attribs;
     XSelectInput(dpy, win, ExposureMask|KeyPressMask|KeyReleaseMask|
 			    ButtonPressMask|ButtonReleaseMask|
 			    StructureNotifyMask); /* listen for these events */
@@ -235,43 +250,62 @@ main(void)
 
     int i = 0;
 
+    /* get pty, xwin master fd */
+    fd_master = init_pty();
+    fd_xwin = ConnectionNumber(dpy);
+    
+    /* main loop */
     while (1) 
     {
-	XNextEvent(dpy, &ev); /* wait */
-	/* TODO: should add switch statement here
-	 * should handle window resize events (so lines can wrap properly)
-	 */
-	XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
-	if (ev.type == Expose) {
+        /* reset file descriptor set */
+        reset_pty(&fds, fd_master, fd_xwin);
+        nfds = (fd_master > fd_xwin ? fd_master : fd_xwin) + 1;
 
-	    printbuf(testbuf, strlen(testbuf), return_attribs.width);
-	    continue; /* only for testing currently */
+        if (select(nfds, &fds, NULL, NULL, NULL) == -1) {
+            perror("select");
+            exit(1);
+        }
 
-	} else if (ev.type == KeyPress) {
+        /* pty is ready for i/o */
+        if (FD_ISSET(fd_master, &fds)) {
+        } 
+        
+        /* xwin is ready for i/o (events available) */
+	    XNextEvent(dpy, &ev); /* wait */
+	    /* TODO: should add switch statement here
+	    * should handle window resize events (so lines can wrap properly)
+	    */
+	    XGetWindowAttributes(dpy, win, &return_attribs); /* will add this to resize event */
+	    if (ev.type == Expose) {
 
-	    XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
-	    fprintf(stderr, "%d\n", buffer[0]);
+		printbuf(testbuf, strlen(testbuf), return_attribs.width);
+		continue; /* only for testing currently */
 
-	    compose_input(composed, i) ? i++ : (i = 0);
+	    } else if (ev.type == KeyPress) {
 
-	    cursor.draw(string.x, string.y, 0);
+		XLookupString(&ev.xkey, buffer, 4, &keysym, NULL); /* keycode must be converted to keysym */
+		fprintf(stderr, "%d\n", buffer[0]);
 
-	    if (handle_escape(buffer[0])) continue;
-	    /* undraw cursor */
-	    XDrawString(dpy, win, gc,
+		compose_input(composed, i) ? i++ : (i = 0);
+
+		cursor.draw(string.x, string.y, 0);
+
+		if (handle_escape(buffer[0])) continue;
+		/* undraw cursor */
+		XDrawString(dpy, win, gc,
 		    string.x, string.y, buffer, strlen(buffer));
-	    string.x+=FONT_W;
-	    
-	    cursor.draw(string.x, string.y, 1);
+		string.x+=FONT_W;
+		
+		cursor.draw(string.x, string.y, 1);
 
-	    if (string.x > return_attribs.width) {
+		if (string.x > return_attribs.width) {
 		carriage_return();
-	    }
+		}
 
-	} else if (ev.type == ResizeRequest) {
+	    } else if (ev.type == ResizeRequest) {
 
-	    XGetWindowAttributes(dpy, win, &return_attribs);
-	    fprintf(stderr, "resized"); /* doesn't work */
+		XGetWindowAttributes(dpy, win, &return_attribs);
+		fprintf(stderr, "resized"); /* doesn't work */
 
 	}
     }
